@@ -4,8 +4,9 @@ import com.example.praktam_2467051025.R
 
 object TagihanSource {
     val dummyTagihan = listOf(
-        TagihanItem("Waffle", "Ice cream waffle", 25000, R.drawable.waffle),
-        TagihanItem("Donat", "Donat all varian", 30000, R.drawable.donat),
-        TagihanItem("Ayam Geprek", "Ayam geprek sambal level 3", 15000, R.drawable.ayam_geprek),
+        TagihanItem("Waffle", "ice cream waffle", 56000, R.drawable.waffle),
+        TagihanItem("Donat", "donat premium", 60000, R.drawable.donat),
+        TagihanItem("Sushi Date", "salmon sashimi", 93000, R.drawable.sushidate),
+        TagihanItem("Spaghetti", "spaghetti bolognyes", 70000, R.drawable.spaghetti),
     )
 }
