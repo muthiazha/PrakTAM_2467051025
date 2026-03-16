@@ -23,6 +23,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -33,6 +35,18 @@ import androidx.compose.ui.unit.sp
 import com.example.praktam_2467051025.model.TagihanItem
 import com.example.praktam_2467051025.model.TagihanSource
 import com.example.praktam_2467051025.ui.theme.PrakTAM_2467051025Theme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,20 +92,36 @@ fun DaftarTagihanScreen() {
 
 @Composable
 fun DetailTagihanItem(item: TagihanItem) {
+    var isFavorite by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column {
-            Image(
-                painter = painterResource(id = item.imageRes),
-                contentDescription = item.nama,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp),
-                contentScale = ContentScale.Crop
-            )
+            Box {
+                Image(
+                    painter = painterResource(id = item.imageRes),
+                    contentDescription = item.nama,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp),
+                    contentScale = ContentScale.Crop
+                )
+                IconButton(
+                    onClick = { isFavorite = !isFavorite },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                        contentDescription = "Favorite Icon",
+                        tint = if (isFavorite) Color.Red else Color.White
+                    )
+                }
+            }
             Column(modifier = Modifier.padding(8.dp)) {
                 Text(
                     text = item.nama,
@@ -112,7 +142,7 @@ fun DetailTagihanItem(item: TagihanItem) {
                     onClick = { },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Tambah", fontSize = 12.sp)
+                    Text("Tambah ke Tagihan", fontSize = 12.sp)
                 }
             }
         }
