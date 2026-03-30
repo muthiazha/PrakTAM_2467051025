@@ -72,7 +72,7 @@ fun DaftarTagihanScreen() {
         item {
             Text(
                 text = "Split Bill",
-                fontSize = 28.sp,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
             Text(
@@ -180,18 +180,19 @@ fun DetailTagihanItem(item: TagihanItem) {
             Column(modifier = Modifier.fillMaxWidth().padding(all = 16.dp)) {
             Text(
                 text = item.nama,
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = item.deskripsi,
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyMedium
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Harga: Rp ${item.harga}",
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(16.dp))
             Button(
