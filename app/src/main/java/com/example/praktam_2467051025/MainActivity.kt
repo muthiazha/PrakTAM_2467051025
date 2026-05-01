@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,49 +14,52 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
 import com.example.praktam_2467051025.model.TagihanItem
-import com.example.praktam_2467051025.model.TagihanSource
+import com.example.praktam_2467051025.network.RetrofitClient
 import com.example.praktam_2467051025.ui.theme.PrakTAM_2467051025Theme
-import androidx.navigation.NavHostController
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -76,18 +78,19 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppNavigation(navController: NavHostController) {
+    var tagihanList by remember { mutableStateOf<List<TagihanItem>>(emptyList()) }
     NavHost(
         navController = navController,
         startDestination = "home"
     ) {
         composable("home") {
-            DaftarTagihanScreen(navController)
+            DaftarTagihanScreen(navController) { fetchedList ->
+                tagihanList = fetchedList
+            }
         }
         composable("detail/{nama}") { backStackEntry ->
             val nama = backStackEntry.arguments?.getString("nama")
-            val item = TagihanSource.dummyTagihan.find {
-                it.nama == nama
-            }
+            val item = tagihanList.find { it.nama == nama }
             if (item != null) {
                 DetailTagihanItem(item = item, navController = navController, isFullScreen = true)
             }
@@ -96,11 +99,58 @@ fun AppNavigation(navController: NavHostController) {
 }
 
 @Composable
-fun DaftarTagihanScreen(navController: NavController) {
+fun DaftarTagihanScreen(navController: NavController, onListLoaded: (List<TagihanItem>) -> Unit = {}) {
+    var tagihanList by remember { mutableStateOf<List<TagihanItem>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var isError by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        try {
+            val result = RetrofitClient.instance.getTagihan()
+            tagihanList = result
+            onListLoaded(tagihanList)
+            isLoading = false
+            isError = false
+        } catch (e: Exception) {
+            isLoading = false
+            isError = true
+        }
+    }
+
+    if (isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    if (isError || tagihanList.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize().padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "Gagal Memuat Data",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Red
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Pastikan koneksi internet Anda menyala",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+        return
+    }
+
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding(),
+        modifier = Modifier.fillMaxSize().statusBarsPadding(),
         contentPadding = PaddingValues(24.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
@@ -121,10 +171,8 @@ fun DaftarTagihanScreen(navController: NavController) {
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(TagihanSource.dummyTagihan) { item ->
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                items(tagihanList) { item ->
                     TagihanRowItem(item = item, navController = navController)
                 }
             }
@@ -136,10 +184,8 @@ fun DaftarTagihanScreen(navController: NavController) {
                 modifier = Modifier.padding(bottom = 8.dp)
             )
         }
-        items(TagihanSource.dummyTagihan.sortedByDescending {
-            it.nama == "Sushi Date" || it.nama == "Spaghetti"
-        }) { item ->
-            TagihanItem(item = item, navController = navController)
+        items(tagihanList) { item ->
+            TagihanItemCard(item = item, navController = navController)
         }
     }
 }
@@ -149,19 +195,18 @@ fun TagihanRowItem(item: TagihanItem, navController: NavController) {
     Card(
         modifier = Modifier
             .width(160.dp)
-            .clickable {
-                navController.navigate("detail/${item.nama}")
-            },
+            .clickable { navController.navigate("detail/${item.nama}") },
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column {
-            Image(
-                painter = painterResource(id = item.imageRes),
+            AsyncImage(
+                model = item.imageUrl,
                 contentDescription = item.nama,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp),
+                placeholder = painterResource(id = R.drawable.waffle),
+                error = painterResource(id = R.drawable.donat),
+                modifier = Modifier.fillMaxWidth().height(100.dp),
                 contentScale = ContentScale.Crop
             )
             Column(modifier = Modifier.padding(start = 10.dp, end = 10.dp, top = 8.dp, bottom = 8.dp)) {
@@ -181,23 +226,21 @@ fun TagihanRowItem(item: TagihanItem, navController: NavController) {
 }
 
 @Composable
-fun TagihanItem(item: TagihanItem, navController: NavController) {
+fun TagihanItemCard(item: TagihanItem, navController: NavController) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable {
-                navController.navigate("detail/${item.nama}")
-            },
+            .clickable { navController.navigate("detail/${item.nama}") },
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column {
-            Image(
-                painter = painterResource(id = item.imageRes),
+            AsyncImage(
+                model = item.imageUrl,
                 contentDescription = item.nama,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp),
+                placeholder = painterResource(id = R.drawable.waffle),
+                error = painterResource(id = R.drawable.donat),
+                modifier = Modifier.fillMaxWidth().height(120.dp),
                 contentScale = ContentScale.Crop
             )
             Column(modifier = Modifier.padding(start = 10.dp, end = 10.dp, top = 8.dp, bottom = 8.dp)) {
@@ -232,25 +275,24 @@ fun DetailTagihanItem(item: TagihanItem, navController: NavController, isFullScr
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Box {
-                    Image(
-                        painter = painterResource(id = item.imageRes),
+                    AsyncImage(
+                        model = item.imageUrl,
                         contentDescription = item.nama,
+                        placeholder = painterResource(id = R.drawable.waffle),
+                        error = painterResource(id = R.drawable.donat),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp),
+                            .height(200.dp)
+                            .clip(RoundedCornerShape(12.dp)),
                         contentScale = ContentScale.Crop
                     )
                     IconButton(
                         onClick = { isFavorite = !isFavorite },
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp)
+                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
                     ) {
                         Icon(
                             imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
@@ -266,10 +308,7 @@ fun DetailTagihanItem(item: TagihanItem, navController: NavController, isFullScr
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = item.deskripsi,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    Text(text = item.deskripsi, style = MaterialTheme.typography.bodyMedium)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Harga: Rp ${item.harga}",
@@ -283,9 +322,7 @@ fun DetailTagihanItem(item: TagihanItem, navController: NavController, isFullScr
                                 coroutineScope.launch {
                                     isLoading = true
                                     delay(2000)
-                                    snackbarHostState.showSnackbar(
-                                        "${item.nama} berhasil ditambahkan ke tagihan!"
-                                    )
+                                    snackbarHostState.showSnackbar("${item.nama} berhasil ditambahkan ke tagihan!")
                                     isLoading = false
                                 }
                             },
